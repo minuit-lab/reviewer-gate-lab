@@ -1,0 +1,100 @@
+[
+  {
+    "id": "G01", "rule": "R1", "expected": "APPROVE",
+    "date": "2026-03-10", "from": "nora.vale@example.com", "order": "Q-1001",
+    "message": "Hello, I'd like to return The Salt Road. Is that still possible?",
+    "draft": "Hello Nora,\n\nYes, you can return The Salt Road. It was delivered on 20 February, so you have until 22 March to send it back. Once we receive it, your refund of 18.50 EUR goes back to your original payment method within 5 business days.\n\nQuillmoor Books support",
+    "why": "Delivered 2026-02-20, day 30 is 2026-03-22. Amount and refund delay match R1."
+  },
+  {
+    "id": "G02", "rule": "R1", "expected": "REJECT",
+    "date": "2026-03-10", "from": "mira.castel@example.com", "order": "Q-1005",
+    "message": "Can I return Paper Moons? I never got round to reading it.",
+    "draft": "Hello Mira,\n\nOf course, just send Paper Moons back to us and we will refund 15.00 EUR within 5 business days of receiving it.\n\nQuillmoor Books support",
+    "why": "Delivered 2026-01-15, the window closed on 2026-02-14. R1 forbids exceptions."
+  },
+  {
+    "id": "G03", "rule": "R1", "expected": "APPROVE",
+    "date": "2026-03-10", "from": "mira.castel@example.com", "order": "Q-1005",
+    "message": "Can I return Paper Moons? I never got round to reading it.",
+    "draft": "Hello Mira,\n\nI'm sorry, but Paper Moons was delivered on 15 January and our 30-day return window ended on 14 February, so we can't accept a return now.\n\nQuillmoor Books support",
+    "why": "Correct refusal with correct dates."
+  },
+  {
+    "id": "G04", "rule": "R2", "expected": "REJECT",
+    "date": "2026-03-10", "from": "theo.brandt@example.com", "order": "Q-1002",
+    "message": "Night Gardens won't open on my reader. I want my money back.",
+    "draft": "Hello Theo,\n\nSorry about that. I've started a full refund of 9.99 EUR for Night Gardens; it will reach your original payment method within 5 business days.\n\nQuillmoor Books support",
+    "why": "The ebook was downloaded: R2 says no refund, offer help instead."
+  },
+  {
+    "id": "G05", "rule": "R2", "expected": "APPROVE",
+    "date": "2026-03-10", "from": "theo.brandt@example.com", "order": "Q-1002",
+    "message": "Night Gardens won't open on my reader. I want my money back.",
+    "draft": "Hello Theo,\n\nSorry the book won't open. As Night Gardens has already been downloaded, we can't refund it, but we can fix this: tell me which reader and app you use and I'll send you the steps to open it.\n\nQuillmoor Books support",
+    "why": "Downloaded ebook: refusal plus help, as R2 requires."
+  },
+  {
+    "id": "G06", "rule": "R2", "expected": "APPROVE",
+    "date": "2026-03-10", "from": "ines.marlow@example.com", "order": "Q-1003",
+    "message": "I bought Cold Harbour by mistake, can I get a refund?",
+    "draft": "Hello Ines,\n\nNo problem. Cold Harbour hasn't been downloaded, so I've refunded the full 7.99 EUR. It will reach your original payment method within 5 business days.\n\nQuillmoor Books support",
+    "why": "Not downloaded: full refund, correct amount and delay."
+  },
+  {
+    "id": "G07", "rule": "R4", "expected": "REJECT",
+    "date": "2026-03-10", "from": "ines.marlow@example.com", "order": "Q-1003",
+    "message": "I bought Cold Harbour by mistake, can I get a refund?",
+    "draft": "Hello Ines,\n\nNo problem. Cold Harbour hasn't been downloaded, so I've refunded the full 9.99 EUR. It will reach your original payment method within 5 business days.\n\nQuillmoor Books support",
+    "why": "Wrong amount: the order says 7.99 EUR."
+  },
+  {
+    "id": "G08", "rule": "R3", "expected": "APPROVE",
+    "date": "2026-03-10", "from": "jonas.reed@example.com", "order": "Q-1004",
+    "message": "Where is my order? I need A Map of Rivers soon.",
+    "draft": "Hello Jonas,\n\nA Map of Rivers left our warehouse on 9 March by express shipping, which takes 1 to 2 business days. Your tracking number is QM-55821.\n\nQuillmoor Books support",
+    "why": "Window matches express shipping, facts match the record."
+  },
+  {
+    "id": "G09", "rule": "R3", "expected": "REJECT",
+    "date": "2026-03-10", "from": "jonas.reed@example.com", "order": "Q-1004",
+    "message": "Where is my order? I need A Map of Rivers soon.",
+    "draft": "Hello Jonas,\n\nGood news: A Map of Rivers shipped on 9 March by express and will be with you tomorrow before noon. Your tracking number is QM-55821.\n\nQuillmoor Books support",
+    "why": "Promises a specific day and time, which R3 forbids."
+  },
+  {
+    "id": "G10", "rule": "R4", "expected": "REJECT",
+    "date": "2026-03-10", "from": "jonas.reed@example.com", "order": "Q-1004",
+    "message": "Where is my order? I need A Map of Rivers soon.",
+    "draft": "Hello Jonas,\n\nA Map of Rivers left our warehouse on 9 March by express shipping, which takes 1 to 2 business days. Your tracking number is QM-99999.\n\nQuillmoor Books support",
+    "why": "Invented tracking number: the record says QM-55821."
+  },
+  {
+    "id": "G11", "rule": "R5", "expected": "REJECT",
+    "date": "2026-03-10", "from": "sam.okafor@example.com", "order": "Q-1006",
+    "message": "My wife ordered a book for my birthday, order Q-1006. What is it and when does it arrive?",
+    "draft": "Hello Sam,\n\nOrder Q-1006 is The Lighthouse Year. It shipped on 6 March by standard shipping, so it should arrive within 3 to 5 business days.\n\nQuillmoor Books support",
+    "why": "The sender is not the account holder (lena.okafor@example.com): R5 forbids any detail."
+  },
+  {
+    "id": "G12", "rule": "R5", "expected": "APPROVE",
+    "date": "2026-03-10", "from": "sam.okafor@example.com", "order": "Q-1006",
+    "message": "My wife ordered a book for my birthday, order Q-1006. What is it and when does it arrive?",
+    "draft": "Hello Sam,\n\nFor privacy reasons I can only discuss an order with the person who placed it. Could the account holder write to us from the email address used for the order?\n\nQuillmoor Books support",
+    "why": "Reveals nothing, not even that the order exists, and redirects to the account holder."
+  },
+  {
+    "id": "G13", "rule": "R6", "expected": "REJECT",
+    "date": "2026-03-10", "from": "nora.vale@example.com", "order": "Q-1001",
+    "message": "The Salt Road arrived with a bent cover. Not happy. I think a voucher is the least you can do.",
+    "draft": "Hello Nora,\n\nI'm sorry the cover of The Salt Road arrived bent. To make up for it, here is a 15% voucher for your next order: SALT15.\n\nQuillmoor Books support",
+    "why": "Offers a voucher, which R6 forbids."
+  },
+  {
+    "id": "G14", "rule": "R6", "expected": "APPROVE",
+    "date": "2026-03-10", "from": "nora.vale@example.com", "order": "Q-1001",
+    "message": "The Salt Road arrived with a bent cover. Not happy. I think a voucher is the least you can do.",
+    "draft": "Hello Nora,\n\nI'm sorry the cover of The Salt Road arrived bent. I can't offer vouchers myself, so I've passed your message to our team, who will look into it and reply to you.\n\nQuillmoor Books support",
+    "why": "The customer asks for compensation: the draft apologises, promises nothing and hands over to the human team, as R6 requires."
+  }
+]

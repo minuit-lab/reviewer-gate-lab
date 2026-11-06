@@ -1,0 +1,8 @@
+{
+  "Q-1001": {"email": "nora.vale@example.com", "item": "The Salt Road", "format": "print", "amount_eur": 18.50, "shipping": "standard", "shipped_on": "2026-02-16", "delivered_on": "2026-02-20", "status": "delivered", "tracking": "QM-40217"},
+  "Q-1002": {"email": "theo.brandt@example.com", "item": "Night Gardens", "format": "ebook", "amount_eur": 9.99, "purchased_on": "2026-03-01", "downloaded": true, "status": "fulfilled"},
+  "Q-1003": {"email": "ines.marlow@example.com", "item": "Cold Harbour", "format": "ebook", "amount_eur": 7.99, "purchased_on": "2026-03-08", "downloaded": false, "status": "fulfilled"},
+  "Q-1004": {"email": "jonas.reed@example.com", "item": "A Map of Rivers", "format": "print", "amount_eur": 24.00, "shipping": "express", "shipped_on": "2026-03-09", "status": "in transit", "tracking": "QM-55821"},
+  "Q-1005": {"email": "mira.castel@example.com", "item": "Paper Moons", "format": "print", "amount_eur": 15.00, "shipping": "standard", "shipped_on": "2026-01-12", "delivered_on": "2026-01-15", "status": "delivered", "tracking": "QM-31876"},
+  "Q-1006": {"email": "lena.okafor@example.com", "item": "The Lighthouse Year", "format": "print", "amount_eur": 21.00, "shipping": "standard", "shipped_on": "2026-03-06", "status": "in transit", "tracking": "QM-52203"}
+}

@@ -1,0 +1,6 @@
+__pycache__/
+outbox/draft.md
+outbox/sent/
+review/
+evals/results/
+.DS_Store
