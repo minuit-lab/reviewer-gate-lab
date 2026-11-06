@@ -21,6 +21,15 @@ class EvalPromptTest(unittest.TestCase):
         self.assertTrue(prompt.startswith(instructions))
         self.assertIn(case["draft"], prompt)
 
+    def test_a_failed_call_is_never_counted_as_an_approval(self):
+        rows = [{"id": "G01", "expected": "REJECT", "got": "ERROR"},
+                {"id": "G02", "expected": "REJECT", "got": "NONE"},
+                {"id": "G03", "expected": "APPROVE", "got": "APPROVE"}]
+        result = run_eval.score(rows)
+        self.assertEqual(result["errors"], ["G01"])
+        self.assertEqual(result["false_approvals"], ["G02"])
+        self.assertEqual((result["correct"], result["judged"]), (1, 2))
+
 
 if __name__ == "__main__":
     unittest.main()

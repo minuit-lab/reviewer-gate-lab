@@ -41,20 +41,39 @@ def build_prompt(instructions, case, orders):
 
 
 def ask_reviewer(prompt, model):
-    with tempfile.TemporaryDirectory() as empty_dir:
-        result = subprocess.run(
-            ["claude", "-p", prompt, "--model", model, "--restricted", "--tools", "",
-             "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}'],
-            cwd=empty_dir, capture_output=True, text=True, timeout=300,
-        )
+    """Return (verdict, output). verdict is APPROVE, REJECT, NONE (no verdict line) or ERROR (the call failed)."""
+    try:
+        with tempfile.TemporaryDirectory() as empty_dir:
+            result = subprocess.run(
+                ["claude", "-p", prompt, "--model", model, "--restricted", "--tools", "",
+                 "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}'],
+                cwd=empty_dir, capture_output=True, text=True, timeout=300,
+            )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        return "ERROR", repr(error)
+    if result.returncode != 0:
+        return "ERROR", (result.stderr or result.stdout).strip()
     found = re.findall(r"VERDICT:\s*(APPROVE|REJECT)", result.stdout)
     return (found[-1] if found else "NONE"), result.stdout.strip()
+
+
+def score(rows):
+    """Split the answers. A failed call is an error, not a judgment: it is never counted as an approval."""
+    judged = [r for r in rows if r["got"] != "ERROR"]
+    return {
+        "correct": sum(r["got"] == r["expected"] for r in judged),
+        "judged": len(judged),
+        "errors": [r["id"] for r in rows if r["got"] == "ERROR"],
+        "false_approvals": [r["id"] for r in judged if r["expected"] == "REJECT" and r["got"] != "REJECT"],
+        "false_rejections": [r["id"] for r in judged if r["expected"] == "APPROVE" and r["got"] != "APPROVE"],
+    }
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model")
     parser.add_argument("--only")
+    parser.add_argument("--runs", type=int, default=1, help="ask each case this many times, to see how stable the reviewer is")
     parser.add_argument("--workers", type=int, default=4)
     args = parser.parse_args()
 
@@ -64,31 +83,36 @@ def main():
     if args.only:
         cases = [c for c in cases if c["id"] in args.only.split(",")]
     orders = json.loads((ROOT / "domain/orders.json").read_text())
+    jobs = [c for c in cases for _ in range(args.runs)]
 
     with concurrent.futures.ThreadPoolExecutor(args.workers) as pool:
-        answers = list(pool.map(lambda c: ask_reviewer(build_prompt(instructions, c, orders), model), cases))
+        answers = list(pool.map(lambda c: ask_reviewer(build_prompt(instructions, c, orders), model), jobs))
 
     rows = []
-    for case, (got, output) in zip(cases, answers):
+    for case, (got, output) in zip(jobs, answers):
         rows.append({"id": case["id"], "rule": case["rule"], "expected": case["expected"], "got": got, "output": output})
-        mark = "ok  " if got == case["expected"] else "FAIL"
+        mark = "ok  " if got == case["expected"] else ("ERR " if got == "ERROR" else "FAIL")
         print("%s %s %s expected %-7s got %s" % (mark, case["id"], case["rule"], case["expected"], got))
 
-    correct = sum(r["got"] == r["expected"] for r in rows)
-    false_approvals = [r["id"] for r in rows if r["expected"] == "REJECT" and r["got"] != "REJECT"]
-    false_rejections = [r["id"] for r in rows if r["expected"] == "APPROVE" and r["got"] != "APPROVE"]
-    print("\n%d/%d correct, model %s" % (correct, len(rows), model))
-    print("False approvals (a bad reply would have been sent): %s" % (", ".join(false_approvals) or "none"))
-    print("False rejections (a good reply sent back for rework): %s" % (", ".join(false_rejections) or "none"))
+    result = score(rows)
+    answers_by_case = {}
+    for r in rows:
+        answers_by_case.setdefault(r["id"], set()).add(r["got"])
+    unstable = sorted(i for i, seen in answers_by_case.items() if len(seen) > 1)
+    print("\n%d/%d correct over %d run(s), model %s" % (result["correct"], result["judged"], args.runs, model))
+    print("False approvals (a bad reply would have been sent): %s" % (", ".join(result["false_approvals"]) or "none"))
+    print("False rejections (a good reply sent back for rework): %s" % (", ".join(result["false_rejections"]) or "none"))
+    if args.runs > 1:
+        print("Unstable cases (different answers across runs): %s" % (", ".join(unstable) or "none"))
+    if result["errors"]:
+        print("Calls that failed, not scored: %s" % ", ".join(result["errors"]))
 
-    out = ROOT / "evals/results" / ("%s-%s.json" % (datetime.date.today().isoformat(), model))
+    out = ROOT / "evals/results" / ("%s-%s-x%d.json" % (datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S"), model, args.runs))
     out.parent.mkdir(exist_ok=True)
-    out.write_text(json.dumps({"model": model, "date": datetime.date.today().isoformat(), "correct": correct,
-                               "total": len(rows), "false_approvals": false_approvals,
-                               "false_rejections": false_rejections, "cases": rows}, indent=2) + "\n")
+    out.write_text(json.dumps(dict(result, model=model, date=datetime.date.today().isoformat(), runs=args.runs,
+                                   total=len(rows), unstable=unstable, cases=rows), indent=2) + "\n")
     print("Details: %s" % out.relative_to(ROOT))
-    return 0 if not false_approvals else 1
-
+    return 1 if result["false_approvals"] or result["errors"] else 0
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -6,7 +6,7 @@ import datetime
 import json
 import sys
 
-from verdict import DRAFT, VERDICT, draft_hash, root
+from verdict import DRAFT, VERDICT, draft_hash, draft_problem, root
 
 
 def main(argv):
@@ -16,6 +16,9 @@ def main(argv):
     base = root()
     if not (base / DRAFT).exists():
         print("No draft at outbox/draft.md.", file=sys.stderr)
+        return 1
+    if draft_problem(base):
+        print(draft_problem(base), file=sys.stderr)
         return 1
     (base / VERDICT).parent.mkdir(parents=True, exist_ok=True)
     record = {

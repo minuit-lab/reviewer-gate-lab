@@ -2,11 +2,11 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash|Write|Edit|MultiEdit|NotebookEdit",
+        "matcher": ".*",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/send_gate.py\""
+            "command": "/usr/bin/python3 -I -S \"$CLAUDE_PROJECT_DIR/.claude/hooks/send_gate.py\" || exit 2"
           }
         ]
       }

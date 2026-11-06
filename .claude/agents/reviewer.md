@@ -26,3 +26,5 @@ VERDICT: REJECT
 If the Bash tool is available, then record your verdict, and use Bash for nothing else:
 
 python3 tools/record_verdict.py <APPROVE|REJECT> "<your rule lines, or: all checks pass>"
+
+Inside the quotes, do not use the characters " $ ` or \. Run it as a single command, with nothing before or after it.

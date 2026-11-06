@@ -106,6 +106,128 @@ class GateTest(unittest.TestCase):
         (self.base / "review/verdict.json").write_text("[]")
         self.assertEqual(self.send_attempt().returncode, 2)
 
+    def test_case_does_not_open_a_way_round(self):
+        # The default macOS disk treats Outbox/Sent and outbox/sent as one folder.
+        for path in ("Outbox/Sent/x.md", "REVIEW/verdict.json", ".Claude/hooks/send_gate.py", "Tools/verdict.py"):
+            self.assertEqual(self.hook("Write", file_path=path, content="x").returncode, 2, path)
+        for command in ("cp outbox/draft.md Outbox/Sent/x.md", "echo '{}' > REVIEW/verdict.json",
+                        "PYTHON3 TOOLS/SEND_REPLY.PY"):
+            self.assertEqual(self.hook("Bash", command=command).returncode, 2, command)
+
+    def test_writer_may_write_only_the_draft(self):
+        for path in ("outbox/x.sh", "domain/policy.md", "notes.md", str(Path.home() / ".claude/settings.json")):
+            self.assertEqual(self.hook("Write", file_path=path, content="x").returncode, 2, path)
+
+    def test_any_tool_with_a_command_is_checked(self):
+        result = self.hook("Monitor", command="cp outbox/draft.md outbox/sent/x.md")
+        self.assertEqual(result.returncode, 2)
+        self.assertEqual(self.hook("Monitor", command="python3 tools/send_reply.py").returncode, 2)
+
+    def test_broken_import_fails_closed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            copy = Path(tmp)
+            (copy / ".claude/hooks").mkdir(parents=True)
+            (copy / "tools").mkdir()
+            (copy / ".claude/hooks/send_gate.py").write_text(HOOK.read_text())
+            (copy / "tools/verdict.py").write_text("def (\n")
+            result = subprocess.run([sys.executable, str(copy / ".claude/hooks/send_gate.py")],
+                                    input=json.dumps({"tool_name": "Bash", "tool_input": {"command": "ls"}}),
+                                    env=self.env, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 2, result.stderr)
+
+    def test_hook_wiring_turns_any_crash_into_a_block(self):
+        settings = json.loads((REPO / ".claude/settings.json").read_text())
+        entry = settings["hooks"]["PreToolUse"][0]
+        self.assertEqual(entry["matcher"], ".*")
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / ".claude/hooks").mkdir(parents=True)
+            (Path(tmp) / ".claude/hooks/send_gate.py").write_text("def (\n")  # a gate that cannot even start
+            result = subprocess.run(["sh", "-c", entry["hooks"][0]["command"]], input="{}",
+                                    env=dict(self.env, CLAUDE_PROJECT_DIR=tmp), capture_output=True, text=True)
+            self.assertEqual(result.returncode, 2)
+
+    # Third independent check, 6 November 2026: each test below passed through the previous gate.
+
+    def test_separators_do_not_hide_a_guarded_name(self):
+        for command in ("cd .claude;sed -i '' 's/return 2$/return 0/' hooks/send_gate.py",
+                        "cd tools&&sed -i '' 's/a/b/' verdict.py",
+                        "cp outbox/draft.md outbox/sent;",
+                        "cp outbox/draft.md {outbox/sent,x}/r.md",
+                        "(cd review)&&ls"):
+            self.assertEqual(self.hook("Bash", command=command).returncode, 2, command)
+
+    def test_the_draft_cannot_be_run_or_replaced_from_the_shell(self):
+        for command in ("bash outbox/draft.md", "sh < outbox/draft.md", ". outbox/draft.md",
+                        "python3 outbox/draft.md", "git apply outbox/draft.md", "patch -p1 < outbox/draft.md",
+                        'ln -sf "$PWD"/x outbox/draft.md'):
+            self.assertEqual(self.hook("Bash", command=command).returncode, 2, command)
+
+    def test_git_cannot_bring_back_an_old_gate(self):
+        for command in ("git checkout HEAD~1 -- .", "git stash", "git restore ."):
+            self.assertEqual(self.hook("Bash", command=command).returncode, 2, command)
+
+    def test_a_linked_draft_is_refused(self):
+        target = self.base / "gate_stand_in.py"
+        target.write_text("return 2\n")
+        draft = self.base / "outbox/draft.md"
+        draft.unlink()
+        draft.symlink_to(target)
+        self.assertEqual(self.hook("Write", file_path=str(target), content="x").returncode, 2)
+        self.assertEqual(self.hook("Write", file_path=str(draft), content="x").returncode, 2)
+        draft.unlink()
+        os.link(target, draft)
+        self.assertEqual(self.hook("Write", file_path=str(draft), content="x").returncode, 2)
+        self.tool("record_verdict.py", "APPROVE", "all checks pass")
+        self.assertEqual(self.tool("send_reply.py").returncode, 1)
+
+    def test_send_files_the_bytes_it_checked(self):
+        # A draft swapped between the check and the copy must not reach outbox/sent/.
+        self.tool("record_verdict.py", "APPROVE", "all checks pass")
+        code = ("import sys, send_reply\n"
+                "real = send_reply.check\n"
+                "def check(*args, **kwargs):\n"
+                "    result = real(*args, **kwargs)\n"
+                "    (send_reply.root() / 'outbox/draft.md').write_text('NEVER REVIEWED')\n"
+                "    return result\n"
+                "send_reply.check = check\n"
+                "sys.exit(send_reply.main())\n")
+        result = subprocess.run([sys.executable, "-c", code], cwd=REPO / "tools",
+                                env=dict(self.env, PYTHONPATH=str(REPO / "tools")), capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        sent = list((self.base / "outbox/sent").iterdir())
+        self.assertEqual(sent[0].read_text(), "Hello Jonas,\n\nYour book shipped on 9 March.\n")
+
+    def test_hook_interpreter_ignores_planted_code(self):
+        # The shell can write outside the repo, for instance a usercustomize.py that Python loads at start.
+        command = json.loads((REPO / ".claude/settings.json").read_text())["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
+        with tempfile.TemporaryDirectory() as home:
+            env = {k: v for k, v in self.env.items() if not k.startswith("PYTHON")}
+            env.update(HOME=home, CLAUDE_PROJECT_DIR=str(REPO))
+            for python in ("python3", "/usr/bin/python3"):
+                site = subprocess.run([python, "-c", "import site; print(site.getusersitepackages())"],
+                                      env=env, capture_output=True, text=True).stdout.strip()
+                Path(site).mkdir(parents=True, exist_ok=True)
+                (Path(site) / "usercustomize.py").write_text("import os\nos._exit(0)\n")
+            event = json.dumps({"tool_name": "Bash", "tool_input": {"command": "cp outbox/draft.md outbox/sent/x.md"}})
+            result = subprocess.run(["sh", "-c", command], input=event, env=env, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 2, result.stderr)
+
+    def test_reviewer_can_record_a_realistic_reason(self):
+        reason = 'python3 tools/record_verdict.py REJECT "R4: draft says 9.99 EUR; order says 7.99 EUR\nR3: promises a day"'
+        self.assertEqual(self.hook("Bash", command=reason).returncode, 0)
+        self.assertEqual(self.hook("Bash", command="python3 tools/record_verdict.py REJECT 'R6: offers a voucher'").returncode, 0)
+        for command in ('python3 tools/record_verdict.py APPROVE "$(cp outbox/draft.md outbox/sent/x)"',
+                        'python3 tools/record_verdict.py APPROVE "ok"; ls',
+                        "python3 tools/record_verdict.py APPROVE\nls",
+                        'python3 tools/record_verdict.py APPROVE "a" "b"'):
+            self.assertEqual(self.hook("Bash", command=command).returncode, 2, command)
+
+    def test_every_path_key_is_checked_and_mcp_tools_are_refused(self):
+        self.assertEqual(self.hook("NotebookEdit", file_path="outbox/draft.md", notebook_path="review/x.ipynb",
+                                   new_source="x").returncode, 2)
+        self.assertEqual(self.hook("mcp__filesystem__write_file", path="review/verdict.json", content="{}").returncode, 2)
+        self.assertEqual(self.hook("mcp__ide__executeCode", code="open('outbox/sent/x.md', 'w')").returncode, 2)
+
     def test_ordinary_work_passes(self):
         self.assertEqual(self.hook("Write", file_path=str(self.base / "outbox/draft.md"), content="hi").returncode, 0)
         self.assertEqual(self.hook("Bash", command="ls domain").returncode, 0)

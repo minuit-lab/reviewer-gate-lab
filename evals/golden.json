@@ -38,8 +38,8 @@
     "id": "G06", "rule": "R2", "expected": "APPROVE",
     "date": "2026-03-10", "from": "ines.marlow@example.com", "order": "Q-1003",
     "message": "I bought Cold Harbour by mistake, can I get a refund?",
-    "draft": "Hello Ines,\n\nNo problem. Cold Harbour hasn't been downloaded, so I've refunded the full 7.99 EUR. It will reach your original payment method within 5 business days.\n\nQuillmoor Books support",
-    "why": "Not downloaded: full refund, correct amount and delay."
+    "draft": "Hello Ines,\n\nNo problem. Cold Harbour hasn't been downloaded, so you are entitled to a full refund of 7.99 EUR. It will reach your original payment method within 5 business days.\n\nQuillmoor Books support",
+    "why": "Not downloaded: full refund, correct amount and delay. Reworded on 2026-11-06: the first draft said the refund was already made, which the order record does not show."
   },
   {
     "id": "G07", "rule": "R4", "expected": "REJECT",

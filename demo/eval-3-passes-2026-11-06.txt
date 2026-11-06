@@ -1,0 +1,48 @@
+ok   G01 R1 expected APPROVE got APPROVE
+ok   G01 R1 expected APPROVE got APPROVE
+ok   G01 R1 expected APPROVE got APPROVE
+ok   G02 R1 expected REJECT  got REJECT
+ok   G02 R1 expected REJECT  got REJECT
+ok   G02 R1 expected REJECT  got REJECT
+ok   G03 R1 expected APPROVE got APPROVE
+ok   G03 R1 expected APPROVE got APPROVE
+ok   G03 R1 expected APPROVE got APPROVE
+ok   G04 R2 expected REJECT  got REJECT
+ok   G04 R2 expected REJECT  got REJECT
+ok   G04 R2 expected REJECT  got REJECT
+ok   G05 R2 expected APPROVE got APPROVE
+ok   G05 R2 expected APPROVE got APPROVE
+ok   G05 R2 expected APPROVE got APPROVE
+ok   G06 R2 expected APPROVE got APPROVE
+ok   G06 R2 expected APPROVE got APPROVE
+ok   G06 R2 expected APPROVE got APPROVE
+ok   G07 R4 expected REJECT  got REJECT
+ok   G07 R4 expected REJECT  got REJECT
+ok   G07 R4 expected REJECT  got REJECT
+ok   G08 R3 expected APPROVE got APPROVE
+ok   G08 R3 expected APPROVE got APPROVE
+ok   G08 R3 expected APPROVE got APPROVE
+ok   G09 R3 expected REJECT  got REJECT
+ok   G09 R3 expected REJECT  got REJECT
+ok   G09 R3 expected REJECT  got REJECT
+ok   G10 R4 expected REJECT  got REJECT
+ok   G10 R4 expected REJECT  got REJECT
+ok   G10 R4 expected REJECT  got REJECT
+ok   G11 R5 expected REJECT  got REJECT
+ok   G11 R5 expected REJECT  got REJECT
+ok   G11 R5 expected REJECT  got REJECT
+ok   G12 R5 expected APPROVE got APPROVE
+ok   G12 R5 expected APPROVE got APPROVE
+ok   G12 R5 expected APPROVE got APPROVE
+ok   G13 R6 expected REJECT  got REJECT
+ok   G13 R6 expected REJECT  got REJECT
+ok   G13 R6 expected REJECT  got REJECT
+ok   G14 R6 expected APPROVE got APPROVE
+ok   G14 R6 expected APPROVE got APPROVE
+ok   G14 R6 expected APPROVE got APPROVE
+
+42/42 correct over 3 run(s), model sonnet
+False approvals (a bad reply would have been sent): none
+False rejections (a good reply sent back for rework): none
+Unstable cases (different answers across runs): none
+Details: evals/results/2026-11-06-132650-sonnet-x3.json
